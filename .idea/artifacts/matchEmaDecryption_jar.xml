@@ -3,7 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/matchEmaDecryption_jar</output-path>
     <root id="archive" name="matchEmaDecryption.jar">
       <element id="module-output" name="matchEmaDecryption" />
-      <element id="file-copy" path="$PROJECT_DIR$/libs/zip4j_1.3.2.jar" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/zip4j_1.3.2.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

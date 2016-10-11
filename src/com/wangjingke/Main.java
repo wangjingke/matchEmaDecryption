@@ -14,8 +14,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        String sourceDir = "D:\\Temp\\test1@match_com"; //args[0]
-        String outputDir = "D:\\Temp\\decryption"; //args[1]
+        String sourceDir = args[0];
+        String outputDir = args[1];
 
         // check the existence of output dir and create one if none exist
         File output = new File(outputDir);
@@ -39,7 +39,7 @@ public class Main {
                 Path fileX, BasicFileAttributes aAttrs
         ) throws IOException {
             if(fileX.toString().endsWith(".zip")) {
-                String newPath = Paths.get(target).resolve(Paths.get(source).relativize(fileX)).toString().replace(".zip", "");
+                String newPath = Paths.get(target).resolve(Paths.get(source).getFileName()+File.separator+Paths.get(source).relativize(fileX)).toString().replace(".zip", "");
                 Decipher.extractFilesToRemote(fileX, newPath);
                 Decipher.extractFilesToLocal(newPath);
             }
