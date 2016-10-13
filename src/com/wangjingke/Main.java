@@ -10,6 +10,8 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class Main {
 
     public static void main(String[] args) throws IOException {
@@ -38,10 +40,13 @@ public class Main {
         public FileVisitResult visitFile(
                 Path fileX, BasicFileAttributes aAttrs
         ) throws IOException {
-            if(fileX.toString().endsWith(".zip")) {
-                String newPath = Paths.get(target).resolve(Paths.get(source).getFileName()+File.separator+Paths.get(source).relativize(fileX)).toString().replace(".zip", "");
+            String newPath = Paths.get(target).resolve(Paths.get(source).getFileName()+File.separator+Paths.get(source).relativize(fileX)).toString().replace(".zip", "");
+            if(fileX.toString().endsWith(".zip") || fileX.toString().endsWith(".zip.uploaded")) {
                 Decipher.extractFilesToRemote(fileX, newPath);
                 Decipher.extractFilesToLocal(newPath);
+            } else {
+                Paths.get(newPath).getParent().toFile().mkdirs();
+                Files.copy(fileX, Paths.get(newPath), REPLACE_EXISTING);
             }
             System.out.println(fileX);
             return FileVisitResult.CONTINUE;
