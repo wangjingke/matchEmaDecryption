@@ -9,12 +9,14 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NullPointerException {
 
         String sourceDir = args[0];
         String outputDir = args[1];
@@ -22,7 +24,6 @@ public class Main {
         // check the existence of output dir and create one if none exist
         File output = new File(outputDir);
         output.mkdirs();
-
         FileVisitor<Path> fileProcessor = new ProcessFile(sourceDir, output.getAbsolutePath());
         Files.walkFileTree(Paths.get(sourceDir).toAbsolutePath(), fileProcessor);
 
@@ -31,6 +32,8 @@ public class Main {
     public static class ProcessFile extends SimpleFileVisitor<Path> {
         private final String source;
         private final String target;
+        private final Pattern studyDate = Pattern.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}");
+        private String password;
 
         ProcessFile(String source, String target) {
             this.source = source;
@@ -41,22 +44,41 @@ public class Main {
                 Path fileX, BasicFileAttributes aAttrs
         ) throws IOException {
             String newPath = Paths.get(target).resolve(Paths.get(source).getFileName()+File.separator+Paths.get(source).relativize(fileX)).toString().replace(".zip", "");
-            if(fileX.toString().endsWith(".zip") || fileX.toString().endsWith(".zip.uploaded")) {
-                Decipher.extractFilesToRemote(fileX, newPath);
-                Decipher.extractFilesToLocal(newPath);
-            } else {
-                Paths.get(newPath).getParent().toFile().mkdirs();
-                Files.copy(fileX, Paths.get(newPath), REPLACE_EXISTING);
+            // choose password based on the date
+            Matcher passwordPicker = studyDate.matcher(newPath);
+            String dateX = null;
+            if (passwordPicker.find()){
+                dateX = passwordPicker.group(0);
             }
+            if(dateX == null){
+                return FileVisitResult.CONTINUE;
+            } else if (dateX.compareTo("2016-11-27") <= 0) {
+                password = "MATCH";
+            } else {
+                password = "7Qv8e3PfaXF25DLb";
+            }
+            try {
+                if(fileX.toString().endsWith(".zip") || fileX.toString().endsWith(".zip.uploaded")) {
+                    // decipher at first level
+                    Decipher.extractFilesToRemote(fileX, newPath, password);
+                    // decipher all following subfolders
+                    Decipher.extractFilesToLocal(newPath, password);
+                } else {
+                    Paths.get(newPath).getParent().toFile().mkdirs();
+                    Files.copy(fileX, Paths.get(newPath), REPLACE_EXISTING);
+                }
+            } catch (NullPointerException npe) {
+                return FileVisitResult.CONTINUE;
+            }
+
             System.out.println(fileX);
             return FileVisitResult.CONTINUE;
         }
     }
 
     public static class Decipher {
-        private static final String password = "MATCH";
 
-        public static void extractFilesToRemote(Path filename, String output) {
+        public static void extractFilesToRemote(Path filename, String output, String password) {
             try {
                 ZipFile zipFile = new ZipFile(filename.toString());
                 if (zipFile.isEncrypted()) {
@@ -70,11 +92,11 @@ public class Main {
                     zipFile.extractFile(fileHeader, output);
                 }
             } catch (ZipException e) {
-                e.printStackTrace();
+                    e.printStackTrace();
             }
         }
 
-        public static void extractFilesToLocal(String output) throws IOException {
+        public static void extractFilesToLocal(String output, String password) throws IOException {
             File remoteFolder = new File(output);
             File[] remoteList = remoteFolder.listFiles();
             for (int j=0; j < remoteList.length; j++) {
